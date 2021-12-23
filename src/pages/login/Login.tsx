@@ -1,19 +1,29 @@
-import React, { useState } from "react"
-// import {Button, Form, FormGroup, Label, Input} from 'reactstrap'
-import Stars from '../../components/shared/Animations/starsAnimation/starAnimation'
-import { LoginIcon } from '@heroicons/react/solid'
-import {useForm} from 'react-hook-form'
+import { useState } from "react";
+
+//Interfaces
+import {ResponseLogin} from '../../components/shared/interfaces/login/loginResponse';
+import { LoginForm } from '../../components/shared/interfaces/login/loginForm';
+
+//Css + animations
+import Stars from '../../components/shared/Animations/starsAnimation/starAnimation';
+import { LoginIcon } from '@heroicons/react/solid';
+import logo from '../../components/shared/assets/logo.png';
+
+// React hooks + yup imports
+import {useForm} from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-import logo from '../../components/shared/assets/logo.png'
-import './Login.css'
+
+// Session Imports
+import { useNavigate } from "react-router";
+import { useSessionContext } from "../../components/auth/SessionContext";
+
+
 
 function Login(){
 
-    interface IFormValues {
-        username: string;
-        password: string;
-    }
+    const [session, setSession] = useSessionContext();
+    const navigate = useNavigate();
 
     const validationSchema = Yup.object().shape({
         username: Yup.string()
@@ -26,10 +36,10 @@ function Login(){
           .max(40, 'Senha não deve exceder 40 characters'),
     });
     
-    const {register, handleSubmit, formState: { errors, isValid, isDirty}} = useForm<IFormValues>({ mode: "all" ,resolver: yupResolver(validationSchema)});
+    const {register, handleSubmit, formState: { errors, isValid, isDirty}} = useForm<LoginForm>({ mode: "all" ,resolver: yupResolver(validationSchema)});
     const [isPending, setIsPending] = useState(false);
 
-    function onSubmit(data: IFormValues){        
+    function onSubmit(data: LoginForm){        
         setIsPending(true)
         const payload = {
             username: data.username.trim() ,
@@ -44,9 +54,15 @@ function Login(){
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
-        .then((data) => {
+        .then((data: ResponseLogin) => {
             setIsPending(false)
-            console.log(data)   
+            setSession({...session, 
+                isAuth: true, 
+                token: data.token, 
+                is_active: data.is_active,
+                role: data.role
+            });
+            navigate("/dashboard");
         }, 
         (error) =>{
             setIsPending(false)
@@ -56,7 +72,8 @@ function Login(){
 
     return(
         <div className="login" >
-            <Stars/>            
+            <Stars/>
+            <button onClick={()=>{console.log(session);}}>ShowSession</button>
             <div className="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-md w-full space-y-8">
 
@@ -70,8 +87,9 @@ function Login(){
                             <div className="py-2">
                                 <label className="sr-only">Usuario</label>
                                 <input className={`form-control ${errors.username ? 'is-invalid' : ''} 
-                                    appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md
-                                    focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+                                    appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300
+                                    placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 
+                                    focus:border-indigo-500 focus:z-10 sm:text-sm`}
                                     placeholder="Usuário"
                                     {...register('username')}
                                 />
@@ -80,8 +98,9 @@ function Login(){
                             <div>
                                 <label className="sr-only"> Password </label>
                                 <input type="password" className={`form-control ${errors.password ? 'is-invalid' : ''}
-                                    appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md
-                                    focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+                                    appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 
+                                    placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 
+                                    focus:border-indigo-500 focus:z-10 sm:text-sm`}
                                     placeholder="Senha"
                                     {...register('password')}
                                 />
